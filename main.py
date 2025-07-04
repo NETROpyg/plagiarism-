@@ -1,16 +1,15 @@
 from telethon import TelegramClient, events, functions
 from telethon.tl.functions.photos import UploadProfilePhotoRequest, DeletePhotosRequest
 from telethon.tl.functions.account import UpdateProfileRequest
-from telethon.tl.types import InputPhoto
-import asyncio
 from io import BytesIO
 
-# بيانات الجلسة (تم استخدام الجلسة التي رفعتها مباشرة)
-api_id = 23988357  # ضع الـ api_id الخاص بك هنا
-api_hash = "25bee10ac433f3dc16a2c0d78bb579de"  # ضع الـ api_hash هنا
-session_file = "my_session"  # نفس اسم الملف الذي رفعته بدون .session
+# إعداد الجلسة
+api_id = 23988357  # ← استبدل هذا بـ api_id الخاص بك
+api_hash = '25bee10ac433f3dc16a2c0d78bb579de'  # ← استبدل هذا بـ api_hash الخاص بك
+session_file = 'my_session'  # ← اسم ملف الجلسة بدون .session
 
 client = TelegramClient(session_file, api_id, api_hash)
+
 
 @client.on(events.NewMessage(pattern=r'^\.انتحال$', func=lambda e: e.is_reply))
 async def impersonate_user(event):
@@ -22,9 +21,10 @@ async def impersonate_user(event):
     try:
         target = await replied.get_sender()
         full = await client(functions.users.GetFullUserRequest(target.id))
+
         name = target.first_name or ""
         lname = target.last_name or ""
-        bio = full.about or ""
+        bio = getattr(full.full_user, "about", "")
 
         # تغيير الاسم والبايو
         await client(UpdateProfileRequest(
@@ -40,7 +40,7 @@ async def impersonate_user(event):
             file.seek(0)
             await client(UploadProfilePhotoRequest(file))
         else:
-            # حذف الصورة إن لم يكن لديه صورة
+            # حذف الصورة الشخصية الحالية إن لم يكن لديه صورة
             await client(DeletePhotosRequest(await client.get_profile_photos('me')))
 
         await event.reply("✅ تم الانتحال بنجاح.")
@@ -48,6 +48,7 @@ async def impersonate_user(event):
     except Exception as e:
         await event.reply(f"❌ خطأ أثناء الانتحال:\n{e}")
 
-print("🚀 يتم تشغيل البوت الآن ...")
+
+print("🚀 البوت يعمل الآن. اكتب .انتحال بالرد على مستخدم لتقليده.")
 client.start()
 client.run_until_disconnected()
